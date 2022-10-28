@@ -3,7 +3,9 @@
 from __future__ import absolute_import, division, unicode_literals
 
 import json as json_lib
+import logging
 import re
+from json import JSONDecodeError
 
 from . import util
 from .httpclient import HTTPClient
@@ -552,7 +554,14 @@ class AdyenClient(object):
             # If the result can't be parsed into json, most likely is raw html.
             # Some response are neither json or raw html, handle them here:
             if raw_response:
-                response = json_lib.loads(raw_response)
+                try:
+                    response = json_lib.loads(raw_response)
+                except JSONDecodeError as error:
+                    logging.error(
+                        f"Raw response: {raw_response}, Status code: {status_code}, Raw request: {raw_request}"
+                    )
+                    raise error
+
             # Pass raised error to error handler.
             self._handle_http_error(url, response, status_code,
                                     headers.get('pspReference'),
